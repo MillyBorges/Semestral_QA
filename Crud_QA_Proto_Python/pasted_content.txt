@@ -1,0 +1,131 @@
+import sqlite3
+import os
+
+# ==========================================
+# 1. CONFIGURAÇÃO DO BANCO DE DADOS
+# ==========================================
+def conectar():
+    """Cria a conexão com o banco de dados SQLite."""
+    return sqlite3.connect("banco_usuarios.db")
+
+def configurar_banco():
+    """Cria a tabela de usuários caso ela não exista."""
+    with conectar() as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nome TEXT NOT NULL,
+                email TEXT NOT NULL
+            )
+        ''')
+        conn.commit()
+
+# ==========================================
+# 2. OPERAÇÕES CRUD
+# ==========================================
+
+# C - CREATE (Criar)
+def criar_usuario(nome, email):
+    with conectar() as conn:
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO usuarios (nome, email) VALUES (?, ?)", (nome, email))
+        conn.commit()
+        print("\n✅ Sucesso: Usuário cadastrado!")
+
+# R - READ (Ler)
+def listar_usuarios():
+    with conectar() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM usuarios")
+        registros = cursor.fetchall()
+        
+        print("\n--- LISTA DE USUÁRIOS ---")
+        if not registros:
+            print("⚠️ Nenhum registro encontrado no banco de dados.")
+        else:
+            for usuario in registros:
+                print(f"ID: {usuario[0]} | Nome: {usuario[1]} | E-mail: {usuario[2]}")
+        print("-------------------------")
+
+# U - UPDATE (Atualizar)
+def atualizar_usuario(id_usuario, novo_nome, novo_email):
+    with conectar() as conn:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE usuarios SET nome = ?, email = ? WHERE id = ?", (novo_nome, novo_email, id_usuario))
+        
+        if cursor.rowcount > 0:
+            print("\n✅ Sucesso: Usuário atualizado!")
+        else:
+            print("\n❌ Erro: ID não encontrado.")
+        conn.commit()
+
+# D - DELETE (Deletar)
+def deletar_usuario(id_usuario):
+    with conectar() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM usuarios WHERE id = ?", (id_usuario,))
+        
+        if cursor.rowcount > 0:
+            print("\n✅ Sucesso: Usuário removido do banco de dados!")
+        else:
+            print("\n❌ Erro: ID não encontrado.")
+        conn.commit()
+
+# ==========================================
+# 3. MENU INTERATIVO DO SISTEMA
+# ==========================================
+def menu():
+    configurar_banco()
+    
+    while True:
+        print("\n=== SISTEMA CRUD ===")
+        print("1. Criar novo usuário")
+        print("2. Listar usuários")
+        print("3. Atualizar usuário")
+        print("4. Deletar usuário")
+        print("5. Sair do sistema")
+        
+        opcao = input("Escolha uma ação (1-5): ")
+        
+        if opcao == '1':
+            nome = input("Digite o nome: ")
+            email = input("Digite o e-mail: ")
+            if nome and email:
+                criar_usuario(nome, email)
+            else:
+                print("\n❌ Erro de Validação: Nome e e-mail são obrigatórios!")
+                
+        elif opcao == '2':
+            listar_usuarios()
+            
+        elif opcao == '3':
+            try:
+                id_usuario = int(input("Digite o ID do usuário que deseja editar: "))
+                nome = input("Digite o novo nome: ")
+                email = input("Digite o novo e-mail: ")
+                atualizar_usuario(id_usuario, nome, email)
+            except ValueError:
+                print("\n❌ Erro: O ID deve ser um número!")
+                
+        elif opcao == '4':
+            try:
+                id_usuario = int(input("Digite o ID do usuário que deseja deletar: "))
+                confirmacao = input(f"Tem certeza que deseja excluir o ID {id_usuario}? (S/N): ").upper()
+                if confirmacao == 'S':
+                    deletar_usuario(id_usuario)
+                else:
+                    print("\n⚠️ Operação cancelada.")
+            except ValueError:
+                print("\n❌ Erro: O ID deve ser um número!")
+                
+        elif opcao == '5':
+            print("\nEncerrando o sistema... Até logo!")
+            break
+            
+        else:
+            print("\n❌ Opção inválida. Tente novamente.")
+
+# Inicia o programa
+if __name__ == "__main__":
+    menu()
